@@ -1,0 +1,4 @@
+--require ./test/ts-node.cli-args 
+--require env-test
+--reporter spec
+--check-leaks

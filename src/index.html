@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="lib/p5.min.js"></script>
+    <script src="lib/p5.dom.min.js"></script>
+    <script src="lib/p5.sound.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <meta charset="utf-8">
+
+
+    <style>
+    </style>
+</head>
+
+<body>
+    <!-- <script src="sketch.js"></script> -->
+    <script>
+        var system;
+
+
+        var iconURLs = [];
+        var icons = [];
+    </script>
+    <script>
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const shapes = [];
+
+        const SPAWN_SIZE = 50;
+        const CIRCUMSCRIBED_DIAMETER = width * Math.sqrt(2);
+
+        let sound, amplitude, img;
+        
+
+
+
+      
+
+        
+
+        function preload() {
+            sound = loadSound('dk.wav');
+        }
+
+        function setupMusicPlayer() {
+            fft = new p5.FFT();
+            amplitude = new p5.Amplitude(0.5);
+            sound.amp(0.2);
+            amplitude.toggleNormalize();
+        }
+
+        function setupCrash() {
+            img = loadImage("dk_drums.png");
+            icon = loadImage('dk.png');
+            icon2 = loadImage('n64.png');
+            // icon3 = loadImage('banana.gif');
+        }
+
+        // fade sound if mouse is over canvas
+        function togglePlay() {
+            if (sound.isPlaying()) {
+                sound.pause();
+            } else {
+                sound.play();
+            }
+        }
+
+        function setup() {
+            // bgImg = loadImage();
+            const canvas = createCanvas(width, height);
+            canvas.mouseClicked(togglePlay);
+
+            angleMode(DEGREES);
+            createShape();
+
+            setupMusicPlayer();
+            setupCrash();
+            system = new ParticleSystem(createVector(width / 2, height / 2));
+        }
+
+        function draw() {
+            background(0);
+            noFill();
+            stroke(0, 255, 255);
+            // // for (const shape of shapes) {
+            // //     if (shape.size > CIRCUMSCRIBED_DIAMETER) {
+            // //         shapes.shift(1);
+            // //     }
+            // //     shape.draw();
+            // // }
+            // const lastShape = shapes[shapes.length - 1];
+            // if (lastShape && lastShape.size >= SPAWN_SIZE) {
+            //     createShape();
+            // }
+            // drawSpinningSpiral(1, 2, frameCount > 3000 ? 3000 : frameCount, frameCount / 10);
+            drawWaveForm();
+            // drawAmplitude();
+
+            if (frameCount % 3 === 0) {
+                system.addParticle();
+            }
+            system.run();
+            drawCrash();
+
+        }
+
+        function drawWaveForm() {
+            var spectrum = fft.analyze();
+            push();
+            noStroke();
+            fill(0, 255, 0); // spectrum is green
+            for (var i = 0; i < spectrum.length; i++) {
+                var x = map(i, 0, spectrum.length, 0, width);
+                var h = -height + map(spectrum[i], 0, 255, height, 0);
+                rect(x, height, width / spectrum.length, h)
+            }
+
+
+            for (var i = 0; i < spectrum.length; i++) {
+                var x = map(i, 0, spectrum.length, width, 0);
+                var h = -height + map(spectrum[i], 0, 255, height, 0);
+                rect(x, height, width / spectrum.length, h)
+            }
+
+
+            var waveform = fft.waveform();
+            noFill();
+            beginShape();
+            stroke(255, 0, 0); // waveform is red
+            strokeWeight(1);
+            for (var i = 0; i < waveform.length; i++) {
+                var x = map(i, 0, waveform.length, 0, width);
+                var y = map(waveform[i], -1, 1, 0, height);
+                vertex(x, y);
+            }
+            endShape();
+            pop();
+        }
+
+        function drawCrash() {
+            var level = amplitude.getLevel();
+            // amplitude.
+            var crashWidth = map(level * 10, 0, 16, img.width / 4, img.width * 4);
+            var crashHeight = map(level * 10, 0, 16, img.height / 4, img.height * 4);
+            var r = map(level * 10, 0, 16, 0, 90);
+            tint(255);
+            push();
+            translate(centerX, centerY);
+            imageMode(CENTER);
+            rotate(radians(-r));
+            image(img, 0, 0, crashWidth, crashHeight);
+            
+            pop();
+        }
+
+        function drawAmplitude() {
+            fill(255);
+            var level = amplitude.getLevel();
+            var size = map(level * 50, 0, 1, 0, 200);
+            var size2 = map(level * 100, 0, 1, 0, 200);
+            let lastSize2 = 0;
+            if (size2 > 1000 && size2 != lastSize2) {
+                console.log(size2);
+                createShape();
+                lastSize2 = size2;
+            }
+            ellipse(width / 2, height / 2, size, size);
+        }
+
+        function polygon(x, y, radius, npoints) {
+            var angle = TWO_PI / npoints;
+            angleMode(RADIANS);
+            beginShape();
+            for (var a = 0; a < TWO_PI; a += angle) {
+                var sx = x + cos(a) * radius;
+                var sy = y + sin(a) * radius;
+                vertex(sx, sy);
+            }
+            endShape(CLOSE);
+        }
+
+        function createShape() {
+            createSpinningHexagon();
+        }
+
+        function drawSpiral(a, b, spins) {
+
+            let x = centerX,
+                y = centerY;
+            for (i = 0; i < spins; i++) {
+                angle = 0.1 * i;
+                x2 = centerX + (a + b * angle) * Math.cos(angle);
+                y2 = centerY + (a + b * angle) * Math.sin(angle);
+                line(x, y, x2, y2);
+                x = x2;
+                y = y2;
+            }
+        }
+
+        function drawSpinningSpiral(a, b, spins, offset) {
+            stroke(255, 255, 255);
+            let x = centerX,
+                y = centerY;
+            for (i = 0; i < spins; i++) {
+                angle = 0.1 * i;
+                x2 = centerX + (a + b * angle) * Math.cos(angle + offset * PI / 5)
+                y2 = centerY + (a + b * angle) * Math.sin(angle + offset * PI / 2);
+                line(x, y, x2, y2);
+                x = x2;
+                y = y2;
+            }
+        }
+
+        function toRadians(angleInDegrees) {
+            return angleInDegrees * (Math.PI / 180);
+        }
+
+        function createCircle() {
+            const c = new Circle();
+            shapes.push(c);
+        }
+
+        function createArc() {
+            const a = new Arc();
+            shapes.push(a);
+        }
+
+
+        function createHexagon() {
+            const h = new Hexagon();
+            shapes.push(h);
+        }
+
+        function createSpinningHexagon() {
+            const h = new SpinningHexagon();
+            shapes.push(h);
+        }
+    </script>
+
+
+
+</body>
+
+</html>
