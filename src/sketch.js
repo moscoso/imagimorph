@@ -78,7 +78,7 @@ function draw() {
     if (lastShape && lastShape.size >= SPAWN_SIZE) {
         createShape();
     }
-    drawSpinningSpiral(1, 2, frameCount > 3000 ? 3000 : frameCount, frameCount / 10);
+    drawSpinningSpiral(1, 2, Math.min(3000, frameCount), frameCount / 3);
 }
 
 function polygon(x, y, radius, npoints) {
