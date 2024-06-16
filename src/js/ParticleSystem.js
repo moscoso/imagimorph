@@ -22,16 +22,22 @@ class ParticleSystem {
     constructor(position) {
         this.origin = position.copy();
         this.particles = [];
-        this.limit = 10;
+        this.limit = 150;
     }
     /**
      * Add a particle to the particle system.
      */
-    addParticle() {
+    addParticle(image) {
         const level = amplitude.getLevel() * 10;
         this.limit = map(level, 0, 8, 10, 150);
-        if (this.particles.length <= this.limit)
-            this.particles.push(new Particle(this.origin));
+        if (this.particles.length <= this.limit){
+			const p = new Particle(this.origin);
+			if(image){
+				p.setImage(image);
+			}
+			this.particles.push(p);
+		}
+		
     }
 
     /**

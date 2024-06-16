@@ -43,19 +43,21 @@ class Particle {
         this.position.add(this.velocity);
         this.lifespan -= 3;
     }
-    
+
     /**
      * Display the Particle by rendering it with P5 draw functions.
      */
     display() {
-        stroke(200, this.lifespan);
-        strokeWeight(2);
-        fill(127, this.lifespan);
-        if (this.image) {
-            image(this.image, this.position.x, this.posity.y, 100, 100);
-        } else {
-            ellipse(this.position.x, this.position.y, 12, 12);
-            tint(255, this.lifespan);
+        if (!this.isDead()) {
+            stroke(200, this.lifespan);
+            strokeWeight(2);
+            fill(127, this.lifespan);
+            if (this.image) {
+                image(this.image, this.position.x, this.position.y, 100, 100);
+            } else {
+                ellipse(this.position.x, this.position.y, 12, 12);
+                tint(255, this.lifespan);
+            }
         }
     }
 

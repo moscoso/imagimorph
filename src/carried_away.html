@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="lib/p5.min.js"></script>
+    <script src="lib/p5.dom.min.js"></script>
+    <script src="lib/p5.sound.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <meta charset="utf-8">
+
+    <script src="js/Particle.js"></script>
+    <script src="js/ParticleSystem.js"></script>
+    <script src="js/shapes/Circle.js"></script>
+    <script src="js/shapes/Arc.js"></script>
+    <script src="js/shapes/Polygon.js"></script>
+    <script src="js/shapes/Hexagon.js"></script>
+    <script src="js/shapes/SpinningHexagon.js"></script>
+    <script src="js/shapes/Spiral.js"></script>
+
+
+    <style>
+    </style>
+</head>
+
+<body>
+    <!-- <script src="sketch.js"></script> -->
+    <script>
+        var system;
+
+
+        var iconURLs = [];
+        var icons = [];
+
+		var icon, stackoverflow;
+
+    </script>
+    <script>
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const shapes = [];
+
+        const SPAWN_SIZE = 50;
+        const CIRCUMSCRIBED_DIAMETER = width * Math.sqrt(2);
+
+        let sound, amplitude, img;
+
+        function preload() {
+            sound = loadSound('carried.wav');
+        }
+
+        function setupMusicPlayer() {
+            fft = new p5.FFT();
+            amplitude = new p5.Amplitude(0.5);
+            sound.amp(0.2);
+            amplitude.toggleNormalize();
+        }
+
+        function setupCrash() {
+            img = loadImage("purple.png");
+            icon = loadImage('crown.jpg');
+            icon2 = loadImage('n64.png');
+
+			stackoverflow =  new Image();
+			stackoverflow.src = 'crown.jpg';
+            // icon3 = loadImage('banana.gif');
+        }
+
+        function togglePlay() {
+            if (sound.isPlaying()) {
+                sound.pause();
+            } else {
+                sound.play();
+            }
+        }
+
+        /**
+         * This is called once when the program starts.
+         * It's used to define initial environment properties such as screen size and background color 
+         * and to load media such as images and fonts as the program starts.
+         */
+        function setup() {
+            // bgImg = loadImage();
+            const canvas = createCanvas(width, height);
+            canvas.mouseClicked(togglePlay);
+
+            angleMode(DEGREES);
+            createSpinningHexagon();
+
+            setupMusicPlayer();
+            setupCrash();
+            system = new ParticleSystem(createVector(width / 2, height / 2));
+        }
+
+        /**
+         * https://p5js.org/reference/#/p5/draw
+         * Called directly after setup(), the draw() function continuously executes the lines of code 
+         * contained inside its block until the program is stopped or noLoop() is called. 
+         * 
+         * Note if noLoop() is called in setup(), 
+         * draw() will still be executed once before stopping. 
+         * draw() is called automatically and should never be called explicitly.
+         */
+        function draw() {
+            background(0);
+            noFill();
+            stroke(255, 0, 255);
+
+            drawSpinningShapes();
+            drawWaveForm();
+            // drawAmplitudeAsCircle();
+            drawSpinningSpiral(1, 2, frameCount > 1304 ? 1304 : frameCount, frameCount / 10);
+
+            if (frameCount % 3 === 0) {
+                system.addParticle();
+            }
+            system.run();
+            drawLogo();
+
+        }
+
+        function drawSpinningShapes() {
+            for (const shape of shapes) {
+                if (shape.size > CIRCUMSCRIBED_DIAMETER) {
+                    shapes.shift(1);
+                }
+                shape.draw();
+            }
+            const lastShape = shapes[shapes.length - 1];
+            if (lastShape && lastShape.size >= SPAWN_SIZE) {
+                createSpinningHexagon();
+            }
+        }
+
+        function drawWaveForm() {
+            var spectrum = fft.analyze();
+            push();
+            noStroke();
+            fill('rgba(0,255,0,0.15)'); // spectrum is green
+            const SPECTRUM_MIN = 0;
+            const SPECTRUM_MAX = 255;
+
+            for (var i = 0; i < spectrum.length; i++) {
+                var waveX = map(i, 0, spectrum.length, 0, width);
+                var waveY = -height + map(spectrum[i], SPECTRUM_MIN, SPECTRUM_MAX, height, 0);
+                rect(waveX, height, width / spectrum.length, waveY)
+            }
+            for (var i = 0; i < spectrum.length; i++) {
+                var reversedX = map(i, 0, spectrum.length, width, 0);
+                var waveY = -height + map(spectrum[i], SPECTRUM_MIN, SPECTRUM_MAX, height, 0);
+                rect(reversedX, height, width / spectrum.length, waveY)
+            }
+
+
+            // const waveform = fft.waveform();
+            // noFill();
+            // beginShape();
+            // stroke(255, 0, 0); // waveform is red
+            // strokeWeight(1);
+            // for (let i = 0; i < waveform.length; i++) {
+            //     const waveX = map(i, 0, waveform.length, 0, width);
+            //     const waveY = map(waveform[i], -1, 1, 0, height);
+            //     vertex(waveX, waveY);
+            // }
+            // endShape();
+            pop();
+        }
+
+        /**
+         *  Draw the amplitude of the soundwave as a Logo
+         */
+        function drawLogo() {
+            var level = amplitude.getLevel();
+
+
+            // amplitude.
+            var crashWidth = map(level * 20, 0, 16, img.width / 2, img.width * 2);
+            var crashHeight = map(level * 20, 0, 16, img.height / 2, img.height * 2);
+            var r = map(level * 10, 0, 16, 0, 90);
+            tint(255);
+            push();
+            translate(centerX, centerY);
+            imageMode(CENTER);
+            rotate(radians(frameCount % 360));
+            image(img, 0, 0, crashWidth, crashHeight);
+
+            pop();
+        }
+
+        /**
+         * Draw the amplitude of the soundwave as a circle
+         */
+        function drawAmplitudeAsCircle() {
+            fill(255);
+            var level = amplitude.getLevel();
+            var size = map(level * 25, 0, 1, 0, 200);
+            ellipse(width / 2, height / 2, size, size);
+        }
+
+
+        /**
+         * Get the horizontal center of the screen
+         */
+        function getCenterX() {
+            return window.innerWidth / 2;
+        }
+
+        /**
+         * Get the vertical center of the screen
+         */
+        function getCenterY() {
+            return window.innerHeight / 2;
+        }
+
+
+        function toRadians(angleInDegrees) {
+            return angleInDegrees * (Math.PI / 180);
+        }
+
+        function createCircle() {
+            const c = new Circle();
+            shapes.push(c);
+        }
+
+        function createArc() {
+            const a = new Arc();
+            shapes.push(a);
+        }
+
+
+        function createHexagon() {
+            const h = new Hexagon();
+            shapes.push(h);
+        }
+
+        function createSpinningHexagon() {
+            const h = new SpinningHexagon();
+            shapes.push(h);
+        }
+
+    </script>
+
+
+
+</body>
+
+</html>
